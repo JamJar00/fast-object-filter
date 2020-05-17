@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using System.Net;
 using System.Linq.Expressions;
@@ -8,6 +9,8 @@ namespace FastObjectFilter
 {
     internal class Parser<T>
     {
+        private const BindingFlags ADDITIONAL_TYPES_BINDING_FLAGS = BindingFlags.Public | BindingFlags.Static;
+
         private readonly Token[] tokens;
 
         private int ptr;
@@ -16,10 +19,29 @@ namespace FastObjectFilter
 
         private readonly BindingFlags bindingFlags;
 
+        private readonly Type[] additionalEnumTypes;
+
         public Parser(Token[] tokens, BindingFlags bindingFlags)
         {
             this.tokens = tokens;
             this.bindingFlags = bindingFlags;
+
+            // Breadth first search through T to get all reachable child types
+            Queue<Type> toProcess = new Queue<Type>();
+            toProcess.Enqueue(typeof(T));
+            HashSet<Type> additionalTypes = new HashSet<Type>();
+            while (toProcess.Count > 0)
+            {
+                IEnumerable<Type> foundAdditionalTypes = toProcess.Dequeue()
+                                                                  .GetProperties(bindingFlags)
+                                                                  .Select(p => p.PropertyType);
+                foreach (Type t in foundAdditionalTypes)
+                {
+                    if (additionalTypes.Add(t))
+                        toProcess.Enqueue(t);
+                }
+            }
+            this.additionalEnumTypes = additionalTypes.Where(t => t.IsEnum).ToArray();
         }
 
         internal Func<T, bool> Compile()
@@ -288,6 +310,7 @@ namespace FastObjectFilter
             msg.Tag
             client.ID
             sendMode
+            SendMode.Reliable
             */
 
             int count = 0;
@@ -314,21 +337,76 @@ namespace FastObjectFilter
             msg.Tag
             client.ID
             sendMode
+            SendMode.Reliable
             */
 
-            (Expression expression, Type type) inner = (parameter, typeof(T));
-            do
-            {
-                string identifier = Eat(TokenType.Identifier) ?? throw new FilterStringSyntaxException($"Identifier token has no value. This is likely a bug in tokenization.");
+            // TODO this should follow the C# Member Lookup principles here, for now we just ban conflicts
+            // https://github.com/dotnet/csharplang/blob/master/spec/expressions.md#member-lookup
 
-                MethodInfo getterMethod = inner.type.GetProperty(identifier, bindingFlags)?.GetGetMethod() ?? throw new FilterStringSyntaxException($"Unknown property '{identifier}' at position {ptr}.");
+            // First consume the list of identifiers
+            List<string> identifiers = new List<string>();
+            do
+                identifiers.Add(Eat(TokenType.Identifier) ?? throw new FilterStringSyntaxException($"Identifier token has no value. This is likely a bug in tokenization."));
+            while (PeekAndEat(TokenType.Dot));
+
+            // Now get possible resolutions of the identifiers
+            List<(Expression expression, Type type)> resolved = new List<(Expression, Type)>();
+
+            (Expression expression, Type type)? resolvedFromQueriedObjectTree = ResolveIdentifiersFromQueriedObjectTree(identifiers);
+            if (resolvedFromQueriedObjectTree != null)
+                resolved.Add(resolvedFromQueriedObjectTree.Value);
+
+            resolved.AddRange(ResolveIdentifiersFromAdditionalEnumTypes(identifiers));
+
+            // Finally reduce that list to the correct one
+            // TODO this should follow the C# Member Lookup principles here, for now we just ban conflicts
+            // https://github.com/dotnet/csharplang/blob/master/spec/expressions.md#member-lookup
+            if (resolved.Count == 0)
+                throw new FilterStringSyntaxException($"Unable to resolve property or type in '{string.Join(".", identifiers)}' at position {ptr}.");
+            else if (resolved.Count > 1)
+                throw new FilterStringSyntaxException($"Unable to parse '{string.Join(".", identifiers)}' at position {ptr} as it resolves to multiple possibilities. This is a limitation in FastObjectFilters expression language. Consider renaming one of the conflicting types.");
+
+            return resolved[0];
+        }
+
+        private (Expression, Type)? ResolveIdentifiersFromQueriedObjectTree(List<string> identifiers)
+        {
+            (Expression expression, Type type) inner = (parameter, typeof(T));
+            foreach (string identifier in identifiers)
+            {
+                MethodInfo? getterMethod = inner.type.GetProperty(identifier, bindingFlags)?.GetGetMethod();
+                if (getterMethod == null)
+                    return null;
+
                 Expression getterExpression = Expression.Call(inner.expression, getterMethod);
 
                 inner = (getterExpression, getterMethod.ReturnType);
             }
-            while (PeekAndEat(TokenType.Dot));
 
             return inner;
+        }
+
+        private IEnumerable<(Expression, Type)> ResolveIdentifiersFromAdditionalEnumTypes(List<string> identifiers)
+        {
+            if (identifiers.Count == 2)
+            {
+                List<(Expression expression, Type type)> resolved = new List<(Expression expression, Type type)>();
+                IEnumerable<Type> enumBases = additionalEnumTypes.Where(t => t.Name == identifiers[0]);
+
+                foreach (Type type in enumBases)
+                {
+                    FieldInfo? fieldInfo = type.GetField(identifiers[1], ADDITIONAL_TYPES_BINDING_FLAGS);
+                    if (fieldInfo != null)
+                    {
+                        Expression getterExpression = Expression.Field(null, fieldInfo);
+                        resolved.Add((getterExpression, fieldInfo.FieldType));
+                    }
+                }
+
+                return resolved;
+            }
+
+            return new List<(Expression expression, Type type)>();
         }
 
         private string? Eat(TokenType tokenType)

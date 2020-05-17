@@ -6,6 +6,12 @@ namespace FastObjectFilter.Tests
     [TestClass]
     public class FastObjectFilterIT
     {
+        private enum Crocodiles
+        {
+            Saltwater,
+            Plastic
+        }
+
         private class DataObject
         {
             public string Forename { get; set; }
@@ -18,7 +24,9 @@ namespace FastObjectFilter.Tests
 
             public short NumberOfCrocodiles { get; set; }
 
-            public DataObject(string forename, string surname, DateTime dob, bool likesCats, short numberOfCrocodiles)
+            public Crocodiles FavouriteCrocodile { get; set; }
+
+            public DataObject(string forename, string surname, DateTime dob, bool likesCats, short numberOfCrocodiles, Crocodiles favouriteCrocodile)
             {
                 Forename = forename;
                 Surname = surname;
@@ -26,16 +34,17 @@ namespace FastObjectFilter.Tests
                 LikesCats = likesCats;
                 NullString = null;
                 NumberOfCrocodiles = numberOfCrocodiles;
+                FavouriteCrocodile = favouriteCrocodile;
             }
         }
 
         [TestMethod]
-        [DataRow("forename == \"Steve\"")]
         [DataRow("Forename == \"Steve\"")]
         [DataRow("Dob.Year == 1962")]
         [DataRow("LikesCats == true")]
         [DataRow("NullString == null")]
         [DataRow("NumberOfCrocodiles == 10")]
+        [DataRow("FavouriteCrocodile == Crocodiles.Saltwater")]
         public void TestMatchingObjectIsSelected(string rule)
         {
             // GIVEN a valid filter string
@@ -46,7 +55,7 @@ namespace FastObjectFilter.Tests
             Assert.IsNotNull(filter);
 
             // GIVEN an data object to format
-            DataObject data = new DataObject("Steve", "Irwin", new DateTime(1962, 9, 22), true, 10);
+            DataObject data = new DataObject("Steve", "Irwin", new DateTime(1962, 9, 22), true, 10, Crocodiles.Saltwater);
 
             // WHEN the object is filtered
             bool result = filter(data);
@@ -56,11 +65,11 @@ namespace FastObjectFilter.Tests
         }
 
         [TestMethod]
-        [DataRow("forename == \"Jamie\"")]
         [DataRow("Forename == \"Jamie\"")]
         [DataRow("LikesCats == false")]
         [DataRow("Forename == null")]
         [DataRow("NumberOfCrocodiles == 12")]
+        [DataRow("FavouriteCrocodile == Crocodiles.Plastic")]
         public void TestNonMatchingObjectIsNotSelected(string rule)
         {
             // GIVEN a valid filter string
@@ -71,7 +80,7 @@ namespace FastObjectFilter.Tests
             Assert.IsNotNull(filter);
 
             // GIVEN an data object to format
-            DataObject data = new DataObject("Steve", "Irwin", new DateTime(1962, 9, 22), true, 10);
+            DataObject data = new DataObject("Steve", "Irwin", new DateTime(1962, 9, 22), true, 10, Crocodiles.Saltwater);
 
             // WHEN the object is filtered
             bool result = filter(data);
