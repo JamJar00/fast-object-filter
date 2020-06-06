@@ -45,6 +45,10 @@ namespace FastObjectFilter.Tests
         [DataRow("NullString == null")]
         [DataRow("NumberOfCrocodiles == 10")]
         [DataRow("FavouriteCrocodile == Crocodiles.Saltwater")]
+        [DataRow("Dob.Year == 1962 || LikesCats == true")]
+        [DataRow("Dob.Year == 1963 || LikesCats == true")]
+        [DataRow("Dob.Year == 1962 || LikesCats == false")]
+        [DataRow("Dob.Year == 1962 && LikesCats == true")]
         public void TestMatchingObjectIsSelected(string rule)
         {
             // GIVEN a valid filter string
@@ -70,6 +74,10 @@ namespace FastObjectFilter.Tests
         [DataRow("Forename == null")]
         [DataRow("NumberOfCrocodiles == 12")]
         [DataRow("FavouriteCrocodile == Crocodiles.Plastic")]
+        [DataRow("Dob.Year == 1963 && LikesCats == true")]
+        [DataRow("Dob.Year == 1962 && LikesCats == false")]
+        [DataRow("Dob.Year == 1963 && LikesCats == false")]
+        [DataRow("Dob.Year == 1963 || LikesCats == false")]
         public void TestNonMatchingObjectIsNotSelected(string rule)
         {
             // GIVEN a valid filter string

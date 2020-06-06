@@ -65,6 +65,8 @@ namespace FastObjectFilter
             msg.Tag == 10
             */
 
+            // TODO support boolean identifiers without comparison (e.g. `LikesCats || LikesDogs`)
+
             if (PeekAndBooleanExpresion(out length))
                 return EatAndBooleanExpression();
             else if (PeekOrBooleanExpresion(out length))
