@@ -39,16 +39,6 @@ namespace FastObjectFilter
                     tokens.Add(new Token(TokenType.Equal, null, ptr));
                     ptr += 2;
                 }
-                else if (current == '<')
-                {
-                    tokens.Add(new Token(TokenType.LessThan, null, ptr));
-                    ptr++;
-                }
-                else if (current == '>')
-                {
-                    tokens.Add(new Token(TokenType.GreaterThan, null, ptr));
-                    ptr++;
-                }
                 else if (current == '<' && next.HasValue && next.Value == '=')
                 {
                     tokens.Add(new Token(TokenType.LessThanOrEqual, null, ptr));
@@ -58,6 +48,16 @@ namespace FastObjectFilter
                 {
                     tokens.Add(new Token(TokenType.GreaterThanOrEqual, null, ptr));
                     ptr += 2;
+                }
+                else if (current == '<')
+                {
+                    tokens.Add(new Token(TokenType.LessThan, null, ptr));
+                    ptr++;
+                }
+                else if (current == '>')
+                {
+                    tokens.Add(new Token(TokenType.GreaterThan, null, ptr));
+                    ptr++;
                 }
                 else if (current == '!' && next.HasValue && next.Value == '=')
                 {
@@ -85,7 +85,7 @@ namespace FastObjectFilter
                 }
                 else
                 {
-                    throw new FilterStringSyntaxException($"Unexpected token at position {ptr}");
+                    throw new FilterStringSyntaxException($"Unexpected token '{current}' at position {ptr}");
                 }
             }
 
