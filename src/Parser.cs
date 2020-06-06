@@ -340,9 +340,6 @@ namespace FastObjectFilter
             SendMode.Reliable
             */
 
-            // TODO this should follow the C# Member Lookup principles here, for now we just ban conflicts
-            // https://github.com/dotnet/csharplang/blob/master/spec/expressions.md#member-lookup
-
             // First consume the list of identifiers
             List<string> identifiers = new List<string>();
             do

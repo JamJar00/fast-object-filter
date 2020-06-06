@@ -7,7 +7,6 @@ namespace FastObjectFilter
 {
     public class FastObjectFilterCompiler
     {
-        // TODO removed IgnoreCase from here, should reflect in fast-string-format
         private const BindingFlags BINDING_FLAGS = BindingFlags.Instance | BindingFlags.Public;
 
         public Func<T, bool> Compile<T>(string expression)
