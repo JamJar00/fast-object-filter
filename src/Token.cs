@@ -14,7 +14,6 @@ namespace FastObjectFilter
             this.TokenType = tokenType;
             this.Value = value;
             this.Position = position;
-
         }
     }
 }

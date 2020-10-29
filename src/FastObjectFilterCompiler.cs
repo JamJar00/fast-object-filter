@@ -1,7 +1,8 @@
-﻿using System.Linq;
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("FastObjectFilter.Test")]
 
 namespace FastObjectFilter
 {

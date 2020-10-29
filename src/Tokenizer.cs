@@ -97,7 +97,7 @@ namespace FastObjectFilter
             string number = "";
             while (ptr < expression.Length && char.IsDigit(expression[ptr]))
                 number += expression[ptr++];
-            tokens.Add(new Token(TokenType.Number, number, ptr));
+            tokens.Add(new Token(TokenType.Number, number, ptr - number.Length));
         }
 
         private void ParseIdentifier()
@@ -108,11 +108,11 @@ namespace FastObjectFilter
 
             // Handle things that look like identifiers but are actually reserved words
             if (identifier == "true" || identifier == "false")
-                tokens.Add(new Token(TokenType.Bool, identifier, ptr));
+                tokens.Add(new Token(TokenType.Bool, identifier, ptr - identifier.Length));
             else if (identifier == "null")
-                tokens.Add(new Token(TokenType.Null, null, ptr));
+                tokens.Add(new Token(TokenType.Null, null, ptr - identifier.Length));
             else
-                tokens.Add(new Token(TokenType.Identifier, identifier, ptr));
+                tokens.Add(new Token(TokenType.Identifier, identifier, ptr - identifier.Length));
         }
 
         private void ParseString()
@@ -123,7 +123,7 @@ namespace FastObjectFilter
             string str = "";
             while (ptr < expression.Length && expression[ptr] != startChar)
                 str += expression[ptr++];
-            tokens.Add(new Token(TokenType.String, str, ptr));
+            tokens.Add(new Token(TokenType.String, str, ptr - str.Length - 1));
 
             ptr++;
         }
